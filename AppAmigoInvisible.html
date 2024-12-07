@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignación de Regalos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+        select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Asignación de Regalos</h1>
+        <label for="giver">Persona que regala:</label>
+        <select id="giver" onchange="updateReceiverOptions()">
+            <option value="" selected disabled>Seleccione un usuario</option>
+            <option value="Mari">Mari</option>
+            <option value="Angel">Angel</option>
+            <option value="Rafa">Rafa</option>
+            <option value="Leti">Leti</option>
+            <option value="Elena">Elena</option>
+            <option value="Xisca">Xisca</option>
+            <option value="Pere">Pere</option>
+            <option value="Aina">Aina</option>
+            <option value="Javi">Javi</option>
+        </select>
+
+        <label for="receiver"><br>Persona que recibe:</label>
+        <select id="receiver">
+            <option value="" selected disabled>Seleccione un usuario</option>
+        </select>
+
+        <button onclick="addFixedPair()">Añadir Relación Fija</button>
+        <button onclick="randomizeAssignments()">Randomizar Asignaciones</button>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script> <!-- Script EmailJS -->
+
+    <script>
+        // Inicializar EmailJS
+        emailjs.init('Ly911DbOrkbsXN2Kd'); // Sustituir con tu user_id
+
+        const fixedPairs = new Map();
+        const users = ["Mari", "Angel", "Rafa", "Leti", "Elena", "Xisca", "Pere", "Aina", "Javi"];
+        const correos = {
+            "Mari": "mari",
+            "Angel": "angel",
+            "Rafa": "rafa",
+            "Leti": "leti",
+            "Elena": "elena",
+            "Xisca": "xisca",
+            "Pere": "pere",
+            "Aina": "aina",
+            "Javi": "chavie_r@hotmail.com"
+        };
+
+        function addFixedPair() {
+            const giver = document.getElementById('giver').value;
+            const receiver = document.getElementById('receiver').value;
+
+            if (!giver || !receiver) {
+                alert("Seleccione ambos usuarios antes de añadir una relación fija.");
+                return;
+            }
+
+            if (giver === receiver) {
+                alert("Un usuario no puede regalarse a sí mismo.");
+                return;
+            }
+
+            if (fixedPairs.has(giver)) {
+                alert(`${giver} ya tiene una relación fija.`);
+                return;
+            }
+
+            // Añadir la relación fija al mapa
+            fixedPairs.set(giver, receiver);
+
+            // Vaciar los comboboxes y volver a llenar con las opciones correctas
+            resetComboboxes();
+
+            // Mostrar las relaciones fijas
+            updateOutput();
+        }
+
+        function randomizeAssignments() {
+            const remainingUsers = users.filter(user => !fixedPairs.has(user));
+            const availableReceivers = users.filter(user => !Array.from(fixedPairs.values()).includes(user));
+
+            if (remainingUsers.length !== availableReceivers.length) {
+                alert("No es posible asignar todos los regalos debido a las restricciones.");
+                return;
+            }
+
+            const assignments = new Map(fixedPairs);
+
+            while (remainingUsers.length > 0) {
+                const giverIndex = Math.floor(Math.random() * remainingUsers.length);
+                const receiverIndex = Math.floor(Math.random() * availableReceivers.length);
+
+                const giver = remainingUsers[giverIndex];
+                const receiver = availableReceivers[receiverIndex];
+
+                if (giver !== receiver) {
+                    assignments.set(giver, receiver);
+                    remainingUsers.splice(giverIndex, 1);
+                    availableReceivers.splice(receiverIndex, 1);
+                }
+            }
+
+            displayAssignments(assignments);
+            sendEmails(assignments);
+        }
+
+        function sendEmails(assignments) {
+            // Crear un array con los datos para enviar los correos
+            assignments.forEach((receiver, giver) => {
+                const giverEmail = correos[giver];
+                const receiverEmail = correos[receiver];
+
+                const templateParams = {
+                    to_email: receiverEmail,  // Correo de quien recibe
+                    from_name: giver,         // Nombre de quien regala
+                    to_name: receiver,        // Nombre de quien recibe
+                    message: `¡Hola ${giver}!\nTe ha tocado regalar a ${receiver}. ¡Feliz Navidad!` // Mensaje del correo
+                };
+
+                // Enviar el correo con EmailJS
+                emailjs.send("service_ope77wd", "template_nq7v108");
+                emailjs.send('service_7zgwd6s', 'template_nq7v108', templateParams)
+                    .then(response => {
+                        console.log('Correo enviado con éxito:', response);
+                    })
+                    .catch(error => {
+                        console.error('Error al enviar el correo:', error);
+                    });
+            });
+        }
+
+        function resetComboboxes() {
+            const giverSelect = document.getElementById('giver');
+            const receiverSelect = document.getElementById('receiver');
+
+            giverSelect.innerHTML = '<option value="" selected disabled>Seleccione un usuario</option>';
+            receiverSelect.innerHTML = '<option value="" selected disabled>Seleccione un usuario</option>';
+
+            users.forEach(user => {
+                if (!fixedPairs.has(user)) {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    giverSelect.appendChild(option);
+                }
+            });
+
+            users.forEach(user => {
+                if (!Array.from(fixedPairs.values()).includes(user)) {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    receiverSelect.appendChild(option);
+                }
+            });
+        }
+
+        function updateOutput() {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '<strong>Asignaciones Fijas:</strong><br>' +
+                Array.from(fixedPairs).map(([giver, receiver]) => `${giver} regala a ${receiver}`).join('<br>') +
+                '<br><br>';
+        }
+
+        function displayAssignments(assignments) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '<strong>Asignaciones Aleatorias:</strong><br>' +
+                Array.from(assignments).map(([giver, receiver]) => `${giver} regala a ${receiver}`).join('<br>');
+        }
+
+        function updateReceiverOptions() {
+            const giver = document.getElementById('giver').value;
+            const receiverSelect = document.getElementById('receiver');
+
+            receiverSelect.innerHTML = '<option value="" selected disabled>Seleccione a una persona</option>';
+
+            users.forEach(user => {
+                if (user !== giver && !Array.from(fixedPairs.values()).includes(user)) {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    receiverSelect.appendChild(option);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
