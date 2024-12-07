@@ -166,15 +166,22 @@
                     message: `¡Hola ${giver}!\nTe ha tocado regalar a ${receiver}. ¡Feliz Navidad!` // Mensaje del correo
                 };
 
-                // Enviar el correo con EmailJS
-                emailjs.send("service_ope77wd", "template_nq7v108");
-                emailjs.send('service_7zgwd6s', 'template_nq7v108', templateParams)
-                    .then(response => {
-                        console.log('Correo enviado con éxito:', response);
-                    })
-                    .catch(error => {
-                        console.error('Error al enviar el correo:', error);
-                    });
+                // Enviar el correo con EmailJS usando CORS Anywhere
+                fetch('https://cors-anywhere.herokuapp.com/https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        service_id: "service_7zgwd6s",
+                        template_id: "template_nq7v108",
+                        user_id: 'Ly911DbOrkbsXN2Kd',
+                        template_params: templateParams,
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => console.log('Correo enviado con éxito:', data))
+                .catch(error => console.error('Error al enviar el correo:', error));
             });
         }
 
